@@ -26,7 +26,6 @@ locals {
   stage           = var.stage
   project         = var.project
   name_prefix     = "${var.project}-${var.stage}"
-  glue_script_key = "scripts/temperature_etl.py"
 }
 
 module "s3_buckets" {
@@ -68,7 +67,6 @@ module "glue_job" {
   data_bucket_name      = module.s3_buckets["data"].bucket_name
   analytics_bucket_name = module.s3_buckets["analytics"].bucket_name
   script_bucket         = module.s3_buckets["analytics"].bucket_name
-  script_key            = local.glue_script_key
   script_source_path    = abspath("${path.module}/../../templates/glue-job/temperature_etl.py")
   timeout_minutes       = 30
   max_retries           = 1
