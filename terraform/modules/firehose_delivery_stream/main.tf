@@ -10,12 +10,17 @@ terraform {
 data "aws_caller_identity" "current" {}
 
 locals {
-  external_id = var.external_id != null ? var.external_id : data.aws_caller_identity.current.account_id
+  external_id        = var.external_id != null ? var.external_id : data.aws_caller_identity.current.account_id
+  role_name          = "${var.name_prefix}-kinesis-firehose-role"
+  role_description   = var.role_description != null ? var.role_description : "Kinesis Firehose role for ${var.name_prefix}"
+  policy_name        = "${var.name_prefix}-kinesis-firehose-policy"
+  policy_description = var.policy_description != null ? var.policy_description : "Allow Firehose ${var.name_prefix} to read from Kinesis and write to S3"
+  stream_name        = "${var.name_prefix}-firehose"
 }
 
 resource "aws_iam_role" "firehose" {
-  name        = var.role_name
-  description = var.role_description
+  name        = local.role_name
+  description = local.role_description
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -38,8 +43,8 @@ resource "aws_iam_role" "firehose" {
 }
 
 resource "aws_iam_policy" "firehose" {
-  name        = var.policy_name
-  description = var.policy_description
+  name        = local.policy_name
+  description = local.policy_description
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -91,7 +96,7 @@ resource "aws_iam_role_policy_attachment" "firehose" {
 }
 
 resource "aws_kinesis_firehose_delivery_stream" "this" {
-  name        = var.name
+  name        = local.stream_name
   destination = "extended_s3"
 
   kinesis_source_configuration {

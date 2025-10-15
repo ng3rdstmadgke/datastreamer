@@ -8,8 +8,8 @@ terraform {
 }
 
 resource "aws_kinesis_stream" "this" {
-  name             = var.name
-  shard_count      = var.shard_count
+  name             = "${var.name_prefix}-${var.stream_suffix}"
+  shard_count      = var.stream_mode == "PROVISIONED" ? var.shard_count : null
   retention_period = var.retention_period
   stream_mode_details {
     stream_mode = var.stream_mode
@@ -17,10 +17,10 @@ resource "aws_kinesis_stream" "this" {
   tags = var.tags
 }
 
-output "stream_arn" {
-  value = aws_kinesis_stream.this.arn
-}
-
 output "stream_name" {
   value = aws_kinesis_stream.this.name
+}
+
+output "stream_arn" {
+  value = aws_kinesis_stream.this.arn
 }

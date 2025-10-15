@@ -1,22 +1,18 @@
-variable "name" {
+variable "name_prefix" {
   type        = string
-  description = "Glue job name."
+  description = "Prefix used to build Glue job/IAM resource names (e.g., project-stage)."
 }
 
-variable "role_name" {
+variable "job_suffix" {
   type        = string
-  description = "IAM role name for the Glue job."
+  description = "Suffix appended to the Glue job name."
+  default     = "temperature-etl"
 }
 
 variable "role_description" {
   type        = string
   description = "Description for the Glue job IAM role."
   default     = null
-}
-
-variable "policy_name" {
-  type        = string
-  description = "IAM policy name for the Glue job."
 }
 
 variable "policy_description" {
@@ -35,10 +31,14 @@ variable "analytics_bucket_arn" {
   description = "ARN of the analytics bucket the job writes to."
 }
 
-variable "description" {
+variable "data_bucket_name" {
   type        = string
-  description = "Description for the Glue job."
-  default     = null
+  description = "Name of the raw data bucket."
+}
+
+variable "analytics_bucket_name" {
+  type        = string
+  description = "Name of the analytics bucket."
 }
 
 variable "script_bucket" {
@@ -62,9 +62,15 @@ variable "upload_script" {
   default     = true
 }
 
-variable "default_arguments" {
+variable "job_description" {
+  type        = string
+  description = "Override description for the Glue job."
+  default     = null
+}
+
+variable "additional_default_arguments" {
   type        = map(string)
-  description = "Default arguments passed to the Glue job."
+  description = "Additional default arguments merged into the base set."
   default     = {}
 }
 

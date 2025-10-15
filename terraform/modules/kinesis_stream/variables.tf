@@ -1,6 +1,12 @@
-variable "name" {
+variable "name_prefix" {
   type        = string
-  description = "Name of the Kinesis stream."
+  description = "Prefix used to build the Kinesis stream name (e.g., project-stage)."
+}
+
+variable "stream_suffix" {
+  type        = string
+  description = "Suffix appended to the stream name."
+  default     = "stream"
 }
 
 variable "shard_count" {

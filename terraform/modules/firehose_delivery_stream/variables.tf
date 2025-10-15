@@ -1,11 +1,6 @@
-variable "name" {
+variable "name_prefix" {
   type        = string
-  description = "Name of the Firehose delivery stream."
-}
-
-variable "role_name" {
-  type        = string
-  description = "Name of the IAM role assumed by Firehose."
+  description = "Prefix used to build resource names (e.g., project-stage)."
 }
 
 variable "role_description" {
@@ -46,11 +41,6 @@ variable "compression_format" {
   type        = string
   description = "Compression format for S3 objects."
   default     = "GZIP"
-}
-
-variable "policy_name" {
-  type        = string
-  description = "Name of the IAM policy attached to the Firehose role."
 }
 
 variable "policy_description" {

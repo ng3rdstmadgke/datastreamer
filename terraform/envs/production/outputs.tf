@@ -1,9 +1,9 @@
 output "data_bucket_name" {
-  value = aws_s3_bucket.bucket["data"].bucket
+  value = module.s3_buckets["data"].bucket_name
 }
 
 output "analytics_bucket_name" {
-  value = aws_s3_bucket.bucket["analytics"].bucket
+  value = module.s3_buckets["analytics"].bucket_name
 }
 
 output "kinesis_stream_name" {

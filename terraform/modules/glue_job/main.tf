@@ -7,9 +7,28 @@ terraform {
   }
 }
 
+locals {
+  role_name          = "${var.name_prefix}-glue-job-role"
+  role_description   = var.role_description != null ? var.role_description : "Glue job role for ${var.name_prefix}"
+  policy_name        = "${var.name_prefix}-glue-job-policy"
+  policy_description = var.policy_description != null ? var.policy_description : "Glue job permissions for ${var.name_prefix}"
+  job_name           = "${var.name_prefix}-${var.job_suffix}"
+  job_description    = var.job_description != null ? var.job_description : "ETL job for ${var.name_prefix}"
+  default_arguments = merge({
+    "--job-bookmark-option"              = "job-bookmark-enable"
+    "--enable-continuous-cloudwatch-log" = "true"
+    "--enable-metrics"                   = ""
+    "--enable-spark-ui"                  = "true"
+    "--TempDir"                          = "s3://${var.analytics_bucket_name}/temp/"
+    "--SOURCE_S3"                        = "s3://${var.data_bucket_name}/raw_data/"
+    "--TARGET_S3"                        = "s3://${var.analytics_bucket_name}/curated/device_telemetry/"
+    "--DLQ_S3"                           = "s3://${var.analytics_bucket_name}/dlq/raw_json/"
+  }, var.additional_default_arguments)
+}
+
 resource "aws_iam_role" "this" {
-  name        = var.role_name
-  description = var.role_description
+  name        = local.role_name
+  description = local.role_description
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -28,8 +47,8 @@ resource "aws_iam_role" "this" {
 }
 
 resource "aws_iam_policy" "this" {
-  name        = var.policy_name
-  description = var.policy_description
+  name        = local.policy_name
+  description = local.policy_description
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -100,9 +119,9 @@ resource "aws_s3_object" "script" {
 }
 
 resource "aws_glue_job" "this" {
-  name         = var.name
+  name         = local.job_name
   role_arn     = aws_iam_role.this.arn
-  description  = var.description
+  description  = local.job_description
   glue_version = var.glue_version
 
   command {
@@ -111,7 +130,7 @@ resource "aws_glue_job" "this" {
     python_version  = var.python_version
   }
 
-  default_arguments = var.default_arguments
+  default_arguments = local.default_arguments
   timeout           = var.timeout_minutes
   max_retries       = var.max_retries
   number_of_workers = var.number_of_workers
