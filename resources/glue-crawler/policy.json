@@ -1,0 +1,46 @@
+{
+  "Version":"2012-10-17",
+  "Statement":[
+    {
+      "Sid":"ReadCuratedBucket",
+      "Effect":"Allow",
+      "Action":[ "s3:ListBucket" ],
+      "Resource":[ "arn:aws:s3:::temperature-analytics-bucket-h50t99ys" ]
+    },
+    {
+      "Sid":"GetObjectsCurated",
+      "Effect":"Allow",
+      "Action":[ "s3:GetObject" ],
+      "Resource":[ "arn:aws:s3:::temperature-analytics-bucket-h50t99ys/*" ]
+    },
+    {
+      "Sid":"GlueCatalog",
+      "Effect":"Allow",
+      "Action":[
+        "glue:*Database*",
+        "glue:*Table*",
+        "glue:CreateTable",
+        "glue:UpdateTable",
+        "glue:GetTable",
+        "glue:GetTables",
+        "glue:GetPartitions",
+        "glue:GetPartition",
+        "glue:CreatePartition",
+        "glue:UpdatePartition",
+        "glue:DeletePartition",
+        "glue:BatchGetPartition",
+        "glue:BatchCreatePartition",
+        "glue:BatchUpdatePartition",
+        "glue:BatchDeletePartition"
+      ],
+
+      "Resource":"*"
+    },
+    {
+      "Sid":"Logs",
+      "Effect":"Allow",
+      "Action":[ "logs:CreateLogGroup","logs:CreateLogStream","logs:PutLogEvents" ],
+      "Resource":"*"
+    }
+  ]
+}
