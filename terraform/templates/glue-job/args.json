@@ -1,0 +1,10 @@
+{
+  "--job-bookmark-option": "job-bookmark-enable",
+  "--enable-continuous-cloudwatch-log": "true",
+  "--enable-metrics": "",
+  "--enable-spark-ui": "true",
+  "--TempDir": "s3://${analytics_bucket}/temp/",
+  "--SOURCE_S3": "s3://${data_bucket}/raw_data/",
+  "--TARGET_S3": "s3://${analytics_bucket}/curated/device_telemetry/",
+  "--DLQ_S3": "s3://${analytics_bucket}/dlq/raw_json/"
+}
