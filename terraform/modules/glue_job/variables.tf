@@ -9,18 +9,6 @@ variable "job_suffix" {
   default     = "temperature-etl"
 }
 
-variable "role_description" {
-  type        = string
-  description = "Description for the Glue job IAM role."
-  default     = null
-}
-
-variable "policy_description" {
-  type        = string
-  description = "Description for the Glue job IAM policy."
-  default     = null
-}
-
 variable "data_bucket_arn" {
   type        = string
   description = "ARN of the raw data bucket the job reads from."
@@ -62,30 +50,6 @@ variable "upload_script" {
   default     = true
 }
 
-variable "job_description" {
-  type        = string
-  description = "Override description for the Glue job."
-  default     = null
-}
-
-variable "additional_default_arguments" {
-  type        = map(string)
-  description = "Additional default arguments merged into the base set."
-  default     = {}
-}
-
-variable "glue_version" {
-  type        = string
-  description = "Glue version."
-  default     = "4.0"
-}
-
-variable "python_version" {
-  type        = string
-  description = "Python version for the Glue job."
-  default     = "3"
-}
-
 variable "timeout_minutes" {
   type        = number
   description = "Job timeout in minutes."
@@ -114,10 +78,4 @@ variable "max_concurrent_runs" {
   type        = number
   description = "Maximum concurrent Glue job runs."
   default     = 1
-}
-
-variable "tags" {
-  type        = map(string)
-  description = "Tags applied to the Glue job."
-  default     = {}
 }

@@ -7,14 +7,18 @@ terraform {
   }
 }
 
+locals {
+  stream_name = "${var.name_prefix}-stream"
+}
+
 resource "aws_kinesis_stream" "this" {
-  name             = "${var.name_prefix}-${var.stream_suffix}"
-  shard_count      = var.stream_mode == "PROVISIONED" ? var.shard_count : null
-  retention_period = var.retention_period
+  name             = local.stream_name
+  shard_count      = var.shard_count
+  retention_period = 24
+
   stream_mode_details {
-    stream_mode = var.stream_mode
+    stream_mode = "PROVISIONED"
   }
-  tags = var.tags
 }
 
 output "stream_name" {

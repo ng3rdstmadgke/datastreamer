@@ -10,12 +10,14 @@ terraform {
 data "aws_caller_identity" "current" {}
 
 locals {
-  external_id        = var.external_id != null ? var.external_id : data.aws_caller_identity.current.account_id
-  role_name          = "${var.name_prefix}-kinesis-firehose-role"
-  role_description   = var.role_description != null ? var.role_description : "Kinesis Firehose role for ${var.name_prefix}"
-  policy_name        = "${var.name_prefix}-kinesis-firehose-policy"
-  policy_description = var.policy_description != null ? var.policy_description : "Allow Firehose ${var.name_prefix} to read from Kinesis and write to S3"
-  stream_name        = "${var.name_prefix}-firehose"
+  account_id        = data.aws_caller_identity.current.account_id
+  role_name         = "${var.name_prefix}-kinesis-firehose-role"
+  role_description  = "Kinesis Firehose role for ${var.name_prefix}"
+  policy_name       = "${var.name_prefix}-kinesis-firehose-policy"
+  policy_description = "Allow Firehose ${var.name_prefix} to read from Kinesis and write to S3"
+  stream_name       = "${var.name_prefix}-firehose"
+  log_group_name    = "/aws/kinesisfirehose/${local.stream_name}"
+  log_stream_name   = "S3Delivery"
 }
 
 resource "aws_iam_role" "firehose" {
@@ -30,16 +32,15 @@ resource "aws_iam_role" "firehose" {
           Service = "firehose.amazonaws.com"
         }
         Action = "sts:AssumeRole"
-        Condition = {
-          StringEquals = {
-            "sts:ExternalId" = local.external_id
-          }
+      Condition = {
+        StringEquals = {
+          "sts:ExternalId" = local.account_id
         }
+      }
       }
     ]
   })
 
-  tags = var.tags
 }
 
 resource "aws_iam_policy" "firehose" {
@@ -87,7 +88,6 @@ resource "aws_iam_policy" "firehose" {
     ]
   })
 
-  tags = var.tags
 }
 
 resource "aws_iam_role_policy_attachment" "firehose" {
@@ -116,13 +116,11 @@ resource "aws_kinesis_firehose_delivery_stream" "this" {
       for_each = var.enable_logging ? [1] : []
       content {
         enabled         = true
-        log_group_name  = var.log_group_name
-        log_stream_name = var.log_stream_name
+        log_group_name  = local.log_group_name
+        log_stream_name = local.log_stream_name
       }
     }
   }
-
-  tags = var.tags
 }
 
 output "delivery_stream_arn" {

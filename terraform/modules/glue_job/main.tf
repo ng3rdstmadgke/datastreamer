@@ -9,12 +9,12 @@ terraform {
 
 locals {
   role_name          = "${var.name_prefix}-glue-job-role"
-  role_description   = var.role_description != null ? var.role_description : "Glue job role for ${var.name_prefix}"
+  role_description   = "Glue job role for ${var.name_prefix}"
   policy_name        = "${var.name_prefix}-glue-job-policy"
-  policy_description = var.policy_description != null ? var.policy_description : "Glue job permissions for ${var.name_prefix}"
+  policy_description = "Glue job permissions for ${var.name_prefix}"
   job_name           = "${var.name_prefix}-${var.job_suffix}"
-  job_description    = var.job_description != null ? var.job_description : "ETL job for ${var.name_prefix}"
-  default_arguments = merge({
+  job_description    = "ETL job for ${var.name_prefix}"
+  default_arguments = {
     "--job-bookmark-option"              = "job-bookmark-enable"
     "--enable-continuous-cloudwatch-log" = "true"
     "--enable-metrics"                   = ""
@@ -23,7 +23,7 @@ locals {
     "--SOURCE_S3"                        = "s3://${var.data_bucket_name}/raw_data/"
     "--TARGET_S3"                        = "s3://${var.analytics_bucket_name}/curated/device_telemetry/"
     "--DLQ_S3"                           = "s3://${var.analytics_bucket_name}/dlq/raw_json/"
-  }, var.additional_default_arguments)
+  }
 }
 
 resource "aws_iam_role" "this" {
@@ -43,7 +43,6 @@ resource "aws_iam_role" "this" {
     ]
   })
 
-  tags = var.tags
 }
 
 resource "aws_iam_policy" "this" {
@@ -100,7 +99,6 @@ resource "aws_iam_policy" "this" {
     ]
   })
 
-  tags = var.tags
 }
 
 resource "aws_iam_role_policy_attachment" "this" {
@@ -122,12 +120,12 @@ resource "aws_glue_job" "this" {
   name         = local.job_name
   role_arn     = aws_iam_role.this.arn
   description  = local.job_description
-  glue_version = var.glue_version
+  glue_version = "4.0"
 
   command {
     name            = "glueetl"
     script_location = "s3://${var.script_bucket}/${var.script_key}"
-    python_version  = var.python_version
+    python_version  = "3"
   }
 
   default_arguments = local.default_arguments
@@ -142,7 +140,6 @@ resource "aws_glue_job" "this" {
 
   depends_on = [aws_s3_object.script]
 
-  tags = var.tags
 }
 
 output "job_name" {

@@ -9,14 +9,14 @@ terraform {
 
 locals {
   role_name           = "${var.name_prefix}-glue-crawler-role"
-  role_description    = var.role_description != null ? var.role_description : "Glue crawler role for ${var.name_prefix}"
+  role_description    = "Glue crawler role for ${var.name_prefix}"
   policy_name         = "${var.name_prefix}-glue-crawler-policy"
-  policy_description  = var.policy_description != null ? var.policy_description : "Glue crawler permissions for ${var.name_prefix}"
-  crawler_name        = "${var.name_prefix}-${var.crawler_suffix}"
-  crawler_description = var.crawler_description != null ? var.crawler_description : "Crawler for ${var.name_prefix}"
-  database_name       = replace("${var.name_prefix}_${var.database_suffix}", "-", "_")
-  s3_targets          = var.s3_targets_override != null ? var.s3_targets_override : ["s3://${var.analytics_bucket_name}/${var.curated_prefix}"]
-  configuration_json = var.configuration_json_override != null ? var.configuration_json_override : jsonencode({
+  policy_description  = "Glue crawler permissions for ${var.name_prefix}"
+  crawler_name        = "${var.name_prefix}-curated-device-telemetry"
+  crawler_description = "Crawler for ${var.name_prefix}"
+  database_name       = replace("${var.name_prefix}_analytics", "-", "_")
+  s3_targets          = ["s3://${var.analytics_bucket_name}/curated/device_telemetry/"]
+  configuration_json  = jsonencode({
     Version = 1.0
     CrawlerOutput = {
       Partitions = {
@@ -48,7 +48,6 @@ resource "aws_iam_role" "this" {
     ]
   })
 
-  tags = var.tags
 }
 
 resource "aws_iam_policy" "this" {
@@ -112,7 +111,6 @@ resource "aws_iam_policy" "this" {
     ]
   })
 
-  tags = var.tags
 }
 
 resource "aws_iam_role_policy_attachment" "this" {
@@ -145,7 +143,6 @@ resource "aws_glue_crawler" "this" {
   configuration = local.configuration_json
   schedule      = var.schedule
 
-  tags = var.tags
 }
 
 output "crawler_name" {
