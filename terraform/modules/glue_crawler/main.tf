@@ -102,7 +102,7 @@ resource "aws_glue_crawler" "this" {
   role          = aws_iam_role.this.arn
   database_name = aws_glue_catalog_database.this.name
   description   = "Crawler for ${var.name_prefix}"
-  table_prefix  = var.table_prefix
+  table_prefix  = ""
 
   dynamic "s3_target" {
     for_each = ["s3://${var.analytics_bucket_name}/curated/device_telemetry/"]

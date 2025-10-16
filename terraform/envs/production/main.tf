@@ -51,7 +51,7 @@ module "firehose" {
   name_prefix        = local.name_prefix
   kinesis_stream_arn = module.kinesis_stream.stream_arn
   s3_bucket_arn      = module.s3_buckets["data"].bucket_arn
-  s3_prefix          = "raw_data/"
+  s3_prefix          = "raw_data/device_sensor/"
   buffering_interval = 60
   buffering_size     = 5
   compression_format = "GZIP"
@@ -79,7 +79,6 @@ module "glue_crawler" {
   source = "../../modules/glue_crawler"
 
   name_prefix           = local.name_prefix
-  table_prefix          = ""
   analytics_bucket_arn  = module.s3_buckets["analytics"].bucket_arn
   analytics_bucket_name = module.s3_buckets["analytics"].bucket_name
   recrawl_behavior      = "CRAWL_EVERYTHING"

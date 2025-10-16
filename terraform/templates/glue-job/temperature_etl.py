@@ -87,6 +87,9 @@ df = df_good.withColumn("event_time", F.to_timestamp("timestamp"))
 # 変換失敗を除外
 df = df.filter(F.col("event_time").isNotNull())
 
+# タイムゾーンを JST (UTC+9) に変換
+df = df.withColumn("event_time", F.from_utc_timestamp("event_time", "Asia/Tokyo"))
+
 # 温度スパイク除外（例）
 df = df.filter((F.col("temperature") > -50) & (F.col("temperature") < 100))
 
@@ -94,12 +97,13 @@ df = df.filter((F.col("temperature") > -50) & (F.col("temperature") < 100))
 w = Window.partitionBy("device_id", "event_time").orderBy(F.col("timestamp").desc_nulls_last())
 df = df.withColumn("rn", F.row_number().over(w)).filter(F.col("rn") == 1).drop("rn")
 
-# パーティション列（UTC基準。JSTにしたい場合は from_utc_timestamp を使用）
+# パーティション列（JST基準）
 df = (
     df.withColumn("year",  F.year("event_time"))
       .withColumn("month", F.month("event_time"))
       .withColumn("day",   F.dayofmonth("event_time"))
 )
+print(df.printSchema())
 
 # ====== 書き出し（append, Parquet, Snappy, Partitioned） ======
 # ファイルサイズ調整（例：1日あたり数ファイルに）※要件で調整

@@ -16,7 +16,6 @@ variable "s3_bucket_arn" {
 variable "s3_prefix" {
   type        = string
   description = "Prefix for S3 delivery objects (must end with /)."
-  default     = "raw_data/"
 }
 
 variable "buffering_interval" {

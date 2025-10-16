@@ -26,13 +26,13 @@ Terraform の操作は Git リポジトリ内の `terraform/envs/production` で
 cd terraform/envs/production
 
 # 依存モジュールとバックエンドの初期化
-terraform init -backend-config=../../backend/backend.hcl
+terraform init
 
 # 差分確認
-terraform plan -var="stage=prod"
+terraform plan
 
 # 変更適用（差分を確認してから実行）
-terraform apply -var="stage=prod"
+terraform apply
 ```
 
 環境を追加する場合は `terraform/envs/<stage>` を作成し、対象 stage の `-var="stage=<stage>"` を指定してください。
