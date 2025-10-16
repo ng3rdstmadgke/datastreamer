@@ -23,9 +23,9 @@ provider "aws" {
 }
 
 locals {
-  stage           = var.stage
-  project         = var.project
-  name_prefix     = "${var.project}-${var.stage}"
+  stage       = var.stage
+  project     = var.project
+  name_prefix = "${var.project}-${var.stage}"
 }
 
 module "s3_buckets" {
@@ -82,5 +82,5 @@ module "glue_crawler" {
   analytics_bucket_arn  = module.s3_buckets["analytics"].bucket_arn
   analytics_bucket_name = module.s3_buckets["analytics"].bucket_name
   recrawl_behavior      = "CRAWL_EVERYTHING"
-  schedule              = null
+  schedule              = "cron(0 * * * ? *)"
 }

@@ -92,8 +92,6 @@ resource "aws_iam_role_policy_attachment" "this" {
 }
 
 resource "aws_s3_object" "script" {
-  count = var.upload_script ? 1 : 0
-
   bucket       = var.script_bucket
   key          = local.glue_script_key
   source       = var.script_source_path

@@ -33,12 +33,6 @@ variable "script_source_path" {
   description = "Local path to the Glue script to upload."
 }
 
-variable "upload_script" {
-  type        = bool
-  description = "Whether to upload the script to S3."
-  default     = true
-}
-
 variable "timeout_minutes" {
   type        = number
   description = "Job timeout in minutes."

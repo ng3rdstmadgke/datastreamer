@@ -9,7 +9,7 @@ from awsglue.dynamicframe import DynamicFrame
 
 # ====== 引数 ======
 # --JOB_NAME my-job
-# --SOURCE_S3 s3://<RAW_BUCKET>/raw_data/
+# --SOURCE_S3 s3://<RAW_BUCKET>/raw_data/device_sensor/
 # --TARGET_S3 s3://<CURATED_BUCKET>/curated/device_telemetry/
 # --DLQ_S3 s3://<CURATED_BUCKET>/dlq/raw_json/   # 任意。指定しない場合はDLQ無効
 args = getResolvedOptions(
