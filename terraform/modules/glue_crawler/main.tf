@@ -7,34 +7,9 @@ terraform {
   }
 }
 
-locals {
-  role_name           = "${var.name_prefix}-glue-crawler-role"
-  role_description    = "Glue crawler role for ${var.name_prefix}"
-  policy_name         = "${var.name_prefix}-glue-crawler-policy"
-  policy_description  = "Glue crawler permissions for ${var.name_prefix}"
-  crawler_name        = "${var.name_prefix}-curated-device-telemetry"
-  crawler_description = "Crawler for ${var.name_prefix}"
-  database_name       = replace("${var.name_prefix}_analytics", "-", "_")
-  s3_targets          = ["s3://${var.analytics_bucket_name}/curated/device_telemetry/"]
-  configuration_json  = jsonencode({
-    Version = 1.0
-    CrawlerOutput = {
-      Partitions = {
-        AddOrUpdateBehavior = "InheritFromTable"
-      }
-      Tables = {
-        AddOrUpdateBehavior = "MergeNewColumns"
-      }
-    }
-    Grouping = {
-      TableLevelConfiguration = 3
-    }
-  })
-}
-
 resource "aws_iam_role" "this" {
-  name        = local.role_name
-  description = local.role_description
+  name        = "${var.name_prefix}-glue-crawler-role"
+  description = "Glue crawler role for ${var.name_prefix}"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -51,8 +26,8 @@ resource "aws_iam_role" "this" {
 }
 
 resource "aws_iam_policy" "this" {
-  name        = local.policy_name
-  description = local.policy_description
+  name        = "${var.name_prefix}-glue-crawler-policy"
+  description = "Glue crawler permissions for ${var.name_prefix}"
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -119,18 +94,18 @@ resource "aws_iam_role_policy_attachment" "this" {
 }
 
 resource "aws_glue_catalog_database" "this" {
-  name = local.database_name
+  name = replace("${var.name_prefix}_analytics", "-", "_")
 }
 
 resource "aws_glue_crawler" "this" {
-  name          = local.crawler_name
+  name          = "${var.name_prefix}-curated-device-telemetry"
   role          = aws_iam_role.this.arn
   database_name = aws_glue_catalog_database.this.name
-  description   = local.crawler_description
+  description   = "Crawler for ${var.name_prefix}"
   table_prefix  = var.table_prefix
 
   dynamic "s3_target" {
-    for_each = local.s3_targets
+    for_each = ["s3://${var.analytics_bucket_name}/curated/device_telemetry/"]
     content {
       path = s3_target.value
     }
@@ -140,7 +115,21 @@ resource "aws_glue_crawler" "this" {
     recrawl_behavior = var.recrawl_behavior
   }
 
-  configuration = local.configuration_json
+  configuration = jsonencode({
+    Version = 1.0
+    CrawlerOutput = {
+      Partitions = {
+        AddOrUpdateBehavior = "InheritFromTable"
+      }
+      Tables = {
+        AddOrUpdateBehavior = "MergeNewColumns"
+      }
+    }
+    Grouping = {
+      TableLevelConfiguration = 3
+    }
+  })
+
   schedule      = var.schedule
 
 }

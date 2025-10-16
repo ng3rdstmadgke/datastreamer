@@ -3,12 +3,6 @@ variable "name_prefix" {
   description = "Prefix used to build Glue job/IAM resource names (e.g., project-stage)."
 }
 
-variable "job_suffix" {
-  type        = string
-  description = "Suffix appended to the Glue job name."
-  default     = "temperature-etl"
-}
-
 variable "data_bucket_arn" {
   type        = string
   description = "ARN of the raw data bucket the job reads from."
@@ -32,11 +26,6 @@ variable "analytics_bucket_name" {
 variable "script_bucket" {
   type        = string
   description = "S3 bucket containing the Glue script."
-}
-
-variable "script_key" {
-  type        = string
-  description = "S3 key for the Glue script file."
 }
 
 variable "script_source_path" {

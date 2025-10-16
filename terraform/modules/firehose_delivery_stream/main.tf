@@ -11,18 +11,12 @@ data "aws_caller_identity" "current" {}
 
 locals {
   account_id        = data.aws_caller_identity.current.account_id
-  role_name         = "${var.name_prefix}-kinesis-firehose-role"
-  role_description  = "Kinesis Firehose role for ${var.name_prefix}"
-  policy_name       = "${var.name_prefix}-kinesis-firehose-policy"
-  policy_description = "Allow Firehose ${var.name_prefix} to read from Kinesis and write to S3"
   stream_name       = "${var.name_prefix}-firehose"
-  log_group_name    = "/aws/kinesisfirehose/${local.stream_name}"
-  log_stream_name   = "S3Delivery"
 }
 
 resource "aws_iam_role" "firehose" {
-  name        = local.role_name
-  description = local.role_description
+  name        = "${var.name_prefix}-kinesis-firehose-role"
+  description = "Kinesis Firehose role for ${var.name_prefix}"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -44,8 +38,8 @@ resource "aws_iam_role" "firehose" {
 }
 
 resource "aws_iam_policy" "firehose" {
-  name        = local.policy_name
-  description = local.policy_description
+  name        = "${var.name_prefix}-kinesis-firehose-policy"
+  description = "Allow Firehose ${var.name_prefix} to read from Kinesis and write to S3"
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -116,8 +110,8 @@ resource "aws_kinesis_firehose_delivery_stream" "this" {
       for_each = var.enable_logging ? [1] : []
       content {
         enabled         = true
-        log_group_name  = local.log_group_name
-        log_stream_name = local.log_stream_name
+        log_group_name  = "/aws/kinesisfirehose/${local.stream_name}"
+        log_stream_name = "S3Delivery"
       }
     }
   }

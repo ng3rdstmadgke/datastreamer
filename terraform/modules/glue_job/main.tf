@@ -8,27 +8,12 @@ terraform {
 }
 
 locals {
-  role_name          = "${var.name_prefix}-glue-job-role"
-  role_description   = "Glue job role for ${var.name_prefix}"
-  policy_name        = "${var.name_prefix}-glue-job-policy"
-  policy_description = "Glue job permissions for ${var.name_prefix}"
-  job_name           = "${var.name_prefix}-${var.job_suffix}"
-  job_description    = "ETL job for ${var.name_prefix}"
-  default_arguments = {
-    "--job-bookmark-option"              = "job-bookmark-enable"
-    "--enable-continuous-cloudwatch-log" = "true"
-    "--enable-metrics"                   = ""
-    "--enable-spark-ui"                  = "true"
-    "--TempDir"                          = "s3://${var.analytics_bucket_name}/temp/"
-    "--SOURCE_S3"                        = "s3://${var.data_bucket_name}/raw_data/"
-    "--TARGET_S3"                        = "s3://${var.analytics_bucket_name}/curated/device_telemetry/"
-    "--DLQ_S3"                           = "s3://${var.analytics_bucket_name}/dlq/raw_json/"
-  }
+  glue_script_key = "scripts/temperature_etl.py"
 }
 
 resource "aws_iam_role" "this" {
-  name        = local.role_name
-  description = local.role_description
+  name        = "${var.name_prefix}-glue-job-role"
+  description = "Glue job role for ${var.name_prefix}"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -46,8 +31,8 @@ resource "aws_iam_role" "this" {
 }
 
 resource "aws_iam_policy" "this" {
-  name        = local.policy_name
-  description = local.policy_description
+  name        = "${var.name_prefix}-glue-job-policy"
+  description = "Glue job permissions for ${var.name_prefix}"
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -110,25 +95,35 @@ resource "aws_s3_object" "script" {
   count = var.upload_script ? 1 : 0
 
   bucket       = var.script_bucket
-  key          = var.script_key
+  key          = local.glue_script_key
   source       = var.script_source_path
   etag         = filemd5(var.script_source_path)
   content_type = "text/x-python"
 }
 
 resource "aws_glue_job" "this" {
-  name         = local.job_name
+  name         = "${var.name_prefix}-temperature-etl"
   role_arn     = aws_iam_role.this.arn
-  description  = local.job_description
+  description  = "ETL job for ${var.name_prefix}"
   glue_version = "4.0"
 
   command {
     name            = "glueetl"
-    script_location = "s3://${var.script_bucket}/${var.script_key}"
+    script_location = "s3://${var.script_bucket}/${local.glue_script_key}"
     python_version  = "3"
   }
 
-  default_arguments = local.default_arguments
+  default_arguments = {
+    "--job-bookmark-option"              = "job-bookmark-enable"
+    "--enable-continuous-cloudwatch-log" = "true"
+    "--enable-metrics"                   = ""
+    "--enable-spark-ui"                  = "true"
+    "--TempDir"                          = "s3://${var.analytics_bucket_name}/temp/"
+    "--SOURCE_S3"                        = "s3://${var.data_bucket_name}/raw_data/"
+    "--TARGET_S3"                        = "s3://${var.analytics_bucket_name}/curated/device_telemetry/"
+    "--DLQ_S3"                           = "s3://${var.analytics_bucket_name}/dlq/raw_json/"
+  }
+
   timeout           = var.timeout_minutes
   max_retries       = var.max_retries
   number_of_workers = var.number_of_workers

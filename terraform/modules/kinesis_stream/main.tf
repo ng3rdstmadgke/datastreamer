@@ -7,12 +7,8 @@ terraform {
   }
 }
 
-locals {
-  stream_name = "${var.name_prefix}-stream"
-}
-
 resource "aws_kinesis_stream" "this" {
-  name             = local.stream_name
+  name             = "${var.name_prefix}-stream"
   shard_count      = var.shard_count
   retention_period = 24
 
