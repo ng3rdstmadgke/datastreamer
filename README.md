@@ -110,7 +110,7 @@ script/
 ```
 
 - **Glue Job スクリプト編集**: `terraform/templates/glue-job/temperature_etl.py` を更新後、`terraform apply` で再デプロイすると S3 にアップロードされます。
-- **DynamoDB/Lambda**: `datastreamer-<stage>-telemetry` に最新イベントが保存されます。Lambda ログは `/aws/lambda/datastreamer-<stage>-kinesis-consumer` に 14 日間保持。
+- **DynamoDB/Lambda**: `datastreamer-<stage>-telemetry` に最新イベントが保存され、TTL (`expires_at`) により 3 日後に自動削除されます。Lambda ログは `/aws/lambda/datastreamer-<stage>-kinesis-consumer` に 14 日間保持。
 - **Secrets**: 秘密情報は AWS Secrets Manager に保管する運用を想定（Terraform モジュールから参照する場合はキー名を指定）。
 
 ## Next Steps

@@ -37,6 +37,11 @@ resource "aws_dynamodb_table" "this" {
     name = "event_ts"
     type = "N"
   }
+
+  ttl {
+    attribute_name = "expires_at"
+    enabled        = true
+  }
 }
 
 resource "aws_iam_role" "lambda" {
