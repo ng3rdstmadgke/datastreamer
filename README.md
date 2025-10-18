@@ -6,12 +6,15 @@
 
 ## Architecture
 
+![Datastreamer アーキテクチャ](docs/drawio/architecture.drawio.png)
+
 - **Kinesis Data Stream** `datastreamer-<stage>-stream`  
   センサークライアント (`sensor.py`) が送信する温度データを受信。
 - **Kinesis Firehose Delivery Stream** `datastreamer-<stage>-firehose`  
-  Stream から Raw デタバケット `s3://<data-bucket>/raw_data/device_sensor/` へ圧縮転送。
+  Stream から Raw データバケット `s3://<data-bucket>/raw_data/device_sensor/` へ圧縮転送。
 - **S3 Buckets**  
   - `datastreamer-<stage>-data-bucket-*` (raw)  
+
   - `datastreamer-<stage>-analytics-bucket-*` (curated)
 - **Glue Job** `datastreamer-<stage>-temperature-etl`  
   EventBridge Scheduler (`rate(15 minutes)`) が `StartJobRun` を発行。脚本は `terraform/templates/glue-job/temperature_etl.py`。
@@ -21,6 +24,8 @@
   Lambda が書き込むテーブル。`device_id` × `event_ts` でデバイスの履歴を管理。
 - **Glue Crawler** `datastreamer-<stage>-curated-device-telemetry`  
   Analytics バケットを対象に 1 時間おき (`cron(0 * * * ? *)`) にカタログ更新。
+- **EventBridge Scheduler** `datastreamer-<stage>-glue-job-schedule`  
+  Glue Job を 15 分おきに起動。Scheduler 用 IAM ロールは Terraform モジュールで払い出し。
 - **IAM**  
   各モジュール内でロール／ポリシーを定義。`PROJECT=datastreamer`, `STAGE=<stage>` タグを共通付与。
 
@@ -53,16 +58,18 @@ Terraform の操作は Git リポジトリ内の `terraform/envs/production` で
 cd terraform/envs/production
 
 # 依存モジュールとバックエンドの初期化
-terraform init
+terraform init -backend-config=../../backend/backend.hcl
 
 # 差分確認
-terraform plan
+terraform plan -var="stage=prod"
 
 # 変更適用（差分を確認してから実行）
-terraform apply -auto-approve
+terraform apply -var="stage=prod"
 
 # EventBridge Scheduler, Glue, Firehose などを含む構成が作成されます
 ```
+
+S3 バケット名などの環境固有値は `terraform/envs/production/terraform.tfvars` で管理し、`terraform plan/apply` 実行時に自動的に読み込まれます。
 
 環境を追加する場合は `terraform/envs/<stage>` を作成し、対象 stage の `-var="stage=<stage>"` を指定してください。
 
@@ -74,16 +81,21 @@ terraform/
 ├── envs/
 │   ├── production/      # 環境別エントリポイント
 │   └── staging/
-└── modules/
-    ├── firehose_delivery_stream/
-    ├── glue_crawler/
-    ├── glue_job/
-    ├── kinesis_lambda_consumer/
-    ├── kinesis_stream/
-    └── s3_bucket/
+├── modules/
+│   ├── firehose_delivery_stream/
+│   ├── glue_crawler/
+│   ├── glue_job/
+│   ├── kinesis_lambda_consumer/
+│   ├── kinesis_stream/
+│   └── s3_bucket/
+└── templates/
+    └── glue-job/
+        └── temperature_etl.py
 lambda/
 └── kinesis_consumer/
     └── handler.py
+script/
+└── sensor.sh
 ```
 
 ## Operational Notes
@@ -98,7 +110,7 @@ lambda/
 ```
 
 - **Glue Job スクリプト編集**: `terraform/templates/glue-job/temperature_etl.py` を更新後、`terraform apply` で再デプロイすると S3 にアップロードされます。
-- **DynamoDB**: `datastreamer-<stage>-telemetry` に最新イベントが保存されます。アプリケーションからリアルタイム参照が可能です。
+- **DynamoDB/Lambda**: `datastreamer-<stage>-telemetry` に最新イベントが保存されます。Lambda ログは `/aws/lambda/datastreamer-<stage>-kinesis-consumer` に 14 日間保持。
 - **Secrets**: 秘密情報は AWS Secrets Manager に保管する運用を想定（Terraform モジュールから参照する場合はキー名を指定）。
 
 ## Next Steps
