@@ -58,6 +58,15 @@ module "firehose" {
   enable_logging     = false
 }
 
+module "kinesis_consumer" {
+  source = "../../modules/kinesis_lambda_consumer"
+
+  name_prefix         = local.name_prefix
+  kinesis_stream_arn  = module.kinesis_stream.stream_arn
+  kinesis_stream_name = module.kinesis_stream.stream_name
+  lambda_source_dir   = abspath("${path.module}/../../../lambda/kinesis_consumer")
+}
+
 module "glue_job" {
   source = "../../modules/glue_job"
 

@@ -9,12 +9,16 @@
 - **Kinesis Data Stream** `datastreamer-<stage>-stream`  
   センサークライアント (`sensor.py`) が送信する温度データを受信。
 - **Kinesis Firehose Delivery Stream** `datastreamer-<stage>-firehose`  
-  Stream から Raw データバケット `s3://<data-bucket>/raw_data/device_sensor/` へ圧縮転送。
+  Stream から Raw デタバケット `s3://<data-bucket>/raw_data/device_sensor/` へ圧縮転送。
 - **S3 Buckets**  
   - `datastreamer-<stage>-data-bucket-*` (raw)  
   - `datastreamer-<stage>-analytics-bucket-*` (curated)
 - **Glue Job** `datastreamer-<stage>-temperature-etl`  
   EventBridge Scheduler (`rate(15 minutes)`) が `StartJobRun` を発行。脚本は `terraform/templates/glue-job/temperature_etl.py`。
+- **Lambda Consumer** `datastreamer-<stage>-kinesis-consumer`  
+  Kinesis ストリームからリアルタイムにイベントを取り込み、DynamoDB に最新レコードを保存。
+- **DynamoDB Table** `datastreamer-<stage>-telemetry`  
+  Lambda が書き込むテーブル。`device_id` × `event_ts` でデバイスの履歴を管理。
 - **Glue Crawler** `datastreamer-<stage>-curated-device-telemetry`  
   Analytics バケットを対象に 1 時間おき (`cron(0 * * * ? *)`) にカタログ更新。
 - **IAM**  
@@ -74,8 +78,12 @@ terraform/
     ├── firehose_delivery_stream/
     ├── glue_crawler/
     ├── glue_job/
+    ├── kinesis_lambda_consumer/
     ├── kinesis_stream/
     └── s3_bucket/
+lambda/
+└── kinesis_consumer/
+    └── handler.py
 ```
 
 ## Operational Notes
@@ -90,6 +98,7 @@ terraform/
 ```
 
 - **Glue Job スクリプト編集**: `terraform/templates/glue-job/temperature_etl.py` を更新後、`terraform apply` で再デプロイすると S3 にアップロードされます。
+- **DynamoDB**: `datastreamer-<stage>-telemetry` に最新イベントが保存されます。アプリケーションからリアルタイム参照が可能です。
 - **Secrets**: 秘密情報は AWS Secrets Manager に保管する運用を想定（Terraform モジュールから参照する場合はキー名を指定）。
 
 ## Next Steps

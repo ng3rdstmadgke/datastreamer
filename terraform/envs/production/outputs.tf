@@ -14,6 +14,14 @@ output "firehose_delivery_stream_name" {
   value = module.firehose.delivery_stream_name
 }
 
+output "kinesis_consumer_lambda_name" {
+  value = module.kinesis_consumer.lambda_name
+}
+
+output "telemetry_table_name" {
+  value = module.kinesis_consumer.dynamodb_table_name
+}
+
 output "glue_job_name" {
   value = module.glue_job.job_name
 }

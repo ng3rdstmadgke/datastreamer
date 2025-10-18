@@ -5,6 +5,7 @@ build/
 dist/
 wheels/
 *.egg-info
+terraform/modules/kinesis_lambda_consumer/lambda.zip
 
 # Virtual environments
 .venv
