@@ -45,7 +45,7 @@ aws glue start-crawler --name datastreamer-prod-curated-device-telemetry
 # Athena 例: 当日の平均温度
 SELECT device_id, AVG(temperature) AS avg_temp
 FROM device_telemetry
-WHERE year='2025' AND month='10' AND day='15'
+WHERE year='2025' AND month='10' AND day='16'
 GROUP BY device_id
 ORDER BY avg_temp DESC;
 ```
@@ -110,7 +110,8 @@ script/
 ```
 
 - **Glue Job スクリプト編集**: `terraform/templates/glue-job/temperature_etl.py` を更新後、`terraform apply` で再デプロイすると S3 にアップロードされます。
-- **DynamoDB/Lambda**: `datastreamer-<stage>-telemetry` に最新イベントが保存され、TTL (`expires_at`) により 3 日後に自動削除されます。Lambda ログは `/aws/lambda/datastreamer-<stage>-kinesis-consumer` に 14 日間保持。
+- **DynamoDB/Lambda**: `datastreamer-<stage>-telemetry` に最新イベントが保存され、TTL (`expires_at`) により 7 日後に自動削除されます。Lambda ログは `/aws/lambda/datastreamer-<stage>-kinesis-consumer` に 14 日間保持。
+- **Athena クエリ**: `script/query.sh <stage> <yyyy-mm-dd>` で日付別の平均温度クエリを実行し、結果を即時表示。`column -t` が利用可能なら CSV も整形表示されます。`ATHENA_WORKGROUP` やテーブル名は引数/環境変数で上書きできます。
 - **Secrets**: 秘密情報は AWS Secrets Manager に保管する運用を想定（Terraform モジュールから参照する場合はキー名を指定）。
 
 ## Next Steps
