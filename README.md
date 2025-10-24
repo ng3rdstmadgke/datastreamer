@@ -58,7 +58,7 @@ Terraform の操作は Git リポジトリ内の `terraform/envs/production` で
 cd terraform/envs/production
 
 # 依存モジュールとバックエンドの初期化
-terraform init -backend-config=../../backend/backend.hcl
+terraform init -backend-config=backend.hcl
 
 # 差分確認
 terraform plan -var="stage=prod"
