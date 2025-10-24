@@ -1,0 +1,11 @@
+#!/bin/bash
+
+SCRIPT_DIR=$(cd $(dirname $0); pwd)
+
+source $SCRIPT_DIR/lib/utils.sh
+
+if [ -n "$PROJECT_DIR" ]; then
+  error "すでに Devcontainer にログインしています"
+fi
+
+devcontainer exec --workspace-folder $SCRIPT_DIR/.. /bin/bash
