@@ -1,5 +1,5 @@
 #!/bin/bash
-
+export PATH="${PROJECT_DIR}/script:${PATH}"
 export $(cat ${PROJECT_DIR}/.devcontainer/.env | grep -v -e "^$" -e "^ *#" | sed -e "s| *#.*$||" | xargs)
 
 complete -C '/usr/local/bin/aws_completer' aws

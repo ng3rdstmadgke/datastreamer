@@ -2,7 +2,7 @@
 
 ## Overview
 
-このリポジトリは、IoT 温度テレメトリを収集・加工する AWS ベースのデータパイプラインを Terraform で管理します。Kinesis Data Stream に流れ込んだイベントを Firehose で S3（Raw）に蓄積し、Glue Job が ETL を実行して Analytics バケットへ加工データを出力します。Glue Crawler は 1 時間おきにカタログを更新し、Athena/Redshift Spectrum からの分析を支援します。
+このリポジトリは、IoT 温度テレメトリを収集・加工する AWS ベースのデータパイプラインを Terraform で管理します。Kinesis Data Stream に流れ込んだイベントを Firehose で S3（Raw）に蓄積し、Glue Job が ETL を実行して S3 Tables（Apache Iceberg形式）へ加工データを出力します。S3 Tablesはメタデータを自動管理するため、Glue Crawlerは不要です。Athena から直接 Iceberg テーブルをクエリできます。
 
 ## Architecture
 
@@ -12,19 +12,20 @@
   センサークライアント (`sensor.py`) が送信する温度データを受信。
 - **Kinesis Firehose Delivery Stream** `datastreamer-<stage>-firehose`  
   Stream から Raw データバケット `s3://<data-bucket>/raw_data/device_sensor/` へ圧縮転送。
-- **S3 Buckets**  
-  - `datastreamer-<stage>-data-bucket-*` (raw)  
-
-  - `datastreamer-<stage>-analytics-bucket-*` (curated)
-- **Glue Job** `datastreamer-<stage>-temperature-etl`  
-  EventBridge Scheduler (`rate(15 minutes)`) が `StartJobRun` を発行。脚本は `terraform/templates/glue-job/temperature_etl.py`。
-- **Lambda Consumer** `datastreamer-<stage>-kinesis-consumer`  
+- **S3 Buckets**
+  - `datastreamer-<stage>-data-bucket-*` (raw data from Kinesis)
+  - `datastreamer-<stage>-support-bucket-*` (Glue scripts, temp files, DLQ)
+- **S3 Table Bucket** `datastreamer-<stage>-iceberg-*`
+  Apache Iceberg 形式のテーブルを格納。メタデータ自動管理、ACID保証、タイムトラベル対応。
+- **S3 Table** `device_telemetry` (namespace: `default`)
+  温度テレメトリの curated データを Iceberg 形式で保存。year/month/day でパーティション化。
+- **Glue Job** `datastreamer-<stage>-temperature-etl`
+  EventBridge Scheduler (`rate(15 minutes)`) が `StartJobRun` を発行。脚本は `terraform/templates/glue-job/temperature_etl_iceberg.py`。
+- **Lambda Consumer** `datastreamer-<stage>-kinesis-consumer`
   Kinesis ストリームからリアルタイムにイベントを取り込み、DynamoDB に最新レコードを保存。
-- **DynamoDB Table** `datastreamer-<stage>-telemetry`  
+- **DynamoDB Table** `datastreamer-<stage>-telemetry`
   Lambda が書き込むテーブル。`device_id` × `event_ts` でデバイスの履歴を管理。
-- **Glue Crawler** `datastreamer-<stage>-curated-device-telemetry`  
-  Analytics バケットを対象に 1 時間おき (`cron(0 * * * ? *)`) にカタログ更新。
-- **EventBridge Scheduler** `datastreamer-<stage>-glue-job-schedule`  
+- **EventBridge Scheduler** `datastreamer-<stage>-glue-job-schedule`
   Glue Job を 15 分おきに起動。Scheduler 用 IAM ロールは Terraform モジュールで払い出し。
 - **IAM**  
   各モジュール内でロール／ポリシーを定義。`PROJECT=datastreamer`, `STAGE=<stage>` タグを共通付与。
@@ -36,18 +37,20 @@
 - リージョン: `ap-northeast-1`
 - 認証: Devcontainer の EC2 インスタンスプロファイル (AdministratorAccess)
 
-```bash
-# Glue Crawler を手動起動したい場合
-aws glue start-crawler --name datastreamer-prod-curated-device-telemetry
-```
-
 ```sql
-# Athena 例: 当日の平均温度
+# Athena 例: 当日の平均温度（Iceberg テーブル）
 SELECT device_id, AVG(temperature) AS avg_temp
-FROM device_telemetry
-WHERE year='2025' AND month='10' AND day='16'
+FROM "s3tablesbucket"."default"."device_telemetry"
+WHERE year=2025 AND month=10 AND day=16
 GROUP BY device_id
 ORDER BY avg_temp DESC;
+
+# タイムトラベル: 1時間前のデータを参照
+SELECT device_id, AVG(temperature) AS avg_temp
+FROM "s3tablesbucket"."default"."device_telemetry"
+FOR SYSTEM_TIME AS OF TIMESTAMP '2025-10-16 10:00:00'
+WHERE year=2025 AND month=10 AND day=16
+GROUP BY device_id;
 ```
 
 ## Terraform
@@ -77,20 +80,22 @@ S3 バケット名などの環境固有値は `terraform/envs/production/terrafo
 
 ```
 terraform/
-├── backend/             # backend.hcl 共通化
 ├── envs/
-│   ├── production/      # 環境別エントリポイント
-│   └── staging/
+│   └── production/             # 環境別エントリポイント
+│       ├── backend.hcl
+│       ├── main.tf
+│       ├── terraform.tfvars
+│       └── variables.tf
 ├── modules/
 │   ├── firehose_delivery_stream/
-│   ├── glue_crawler/
 │   ├── glue_job/
 │   ├── kinesis_lambda_consumer/
 │   ├── kinesis_stream/
-│   └── s3_bucket/
+│   ├── s3_bucket/
+│   └── s3_tables/              # S3 Tables (Iceberg)
 └── templates/
     └── glue-job/
-        └── temperature_etl.py
+        └── temperature_etl_iceberg.py
 lambda/
 └── kinesis_consumer/
     └── handler.py
@@ -101,7 +106,12 @@ script/
 ## Operational Notes
 
 - **Glue Job スケジュール**: EventBridge Scheduler (`aws_scheduler_schedule`) が 15 分間隔で `StartJobRun` を実行。
-- **Glue Crawler スケジュール**: `cron(0 * * * ? *)` で 1 時間おきに実行。必要に応じて `module "glue_crawler"` の `schedule` を調整。
+- **S3 Tables (Iceberg) の特徴**:
+  - メタデータ自動管理（Crawler不要）
+  - ACID トランザクション保証
+  - タイムトラベルクエリ対応
+  - 自動最適化（compaction, cleanup）
+  - パフォーマンス向上（従来比3倍）
 - **Sensor CLI**: テストデータ送信には `script/sensor.sh` を利用します。
 
 ```bash
@@ -109,7 +119,7 @@ script/
 ./script/sensor.sh prod   # Ctrl+C で停止
 ```
 
-- **Glue Job スクリプト編集**: `terraform/templates/glue-job/temperature_etl.py` を更新後、`terraform apply` で再デプロイすると S3 にアップロードされます。
+- **Glue Job スクリプト編集**: `terraform/templates/glue-job/temperature_etl_iceberg.py` を更新後、`terraform apply` で再デプロイすると S3 にアップロードされます。
 - **DynamoDB/Lambda**: `datastreamer-<stage>-telemetry` に最新イベントが保存され、TTL (`expires_at`) により 7 日後に自動削除されます。Lambda ログは `/aws/lambda/datastreamer-<stage>-kinesis-consumer` に 14 日間保持。
 - **Athena クエリ**: `script/query.sh <stage> <yyyy-mm-dd>` で日付別の平均温度クエリを実行し、結果を即時表示。`column -t` が利用可能なら CSV も整形表示されます。`ATHENA_WORKGROUP` やテーブル名は引数/環境変数で上書きできます。
 - **Secrets**: 秘密情報は AWS Secrets Manager に保管する運用を想定（Terraform モジュールから参照する場合はキー名を指定）。

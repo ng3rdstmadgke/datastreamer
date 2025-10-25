@@ -8,9 +8,9 @@ variable "data_bucket_arn" {
   description = "ARN of the raw data bucket the job reads from."
 }
 
-variable "analytics_bucket_arn" {
+variable "support_bucket_arn" {
   type        = string
-  description = "ARN of the analytics bucket the job writes to."
+  description = "ARN of the support bucket for scripts, temp files, and DLQ."
 }
 
 variable "data_bucket_name" {
@@ -18,9 +18,9 @@ variable "data_bucket_name" {
   description = "Name of the raw data bucket."
 }
 
-variable "analytics_bucket_name" {
+variable "support_bucket_name" {
   type        = string
-  description = "Name of the analytics bucket."
+  description = "Name of the support bucket for scripts, temp files, and DLQ."
 }
 
 variable "script_bucket" {
@@ -61,4 +61,20 @@ variable "max_concurrent_runs" {
   type        = number
   description = "Maximum concurrent Glue job runs."
   default     = 1
+}
+
+variable "table_bucket_arn" {
+  type        = string
+  description = "ARN of the S3 Table Bucket for Iceberg."
+}
+
+variable "table_name" {
+  type        = string
+  description = "Name of the S3 Table."
+}
+
+variable "table_namespace" {
+  type        = string
+  description = "Namespace of the S3 Table."
+  default     = "default"
 }

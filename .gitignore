@@ -11,3 +11,5 @@ terraform/modules/kinesis_lambda_consumer/lambda.zip
 .venv
 
 **/.terraform/
+
+tmp/

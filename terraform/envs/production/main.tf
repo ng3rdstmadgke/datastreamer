@@ -32,8 +32,8 @@ module "s3_buckets" {
   source = "../../modules/s3_bucket"
 
   for_each = {
-    data      = var.data_bucket_name
-    analytics = var.analytics_bucket_name
+    data    = var.data_bucket_name
+    support = var.support_bucket_name
   }
 
   bucket_name = each.value
@@ -67,29 +67,32 @@ module "kinesis_consumer" {
   lambda_source_dir   = abspath("${path.module}/../../../lambda/kinesis_consumer")
 }
 
+module "s3_tables" {
+  source = "../../modules/s3_tables"
+
+  table_bucket_name = var.table_bucket_name
+  table_name        = "device_telemetry"
+  namespace         = "default"
+}
+
 module "glue_job" {
   source = "../../modules/glue_job"
 
-  name_prefix           = local.name_prefix
-  data_bucket_arn       = module.s3_buckets["data"].bucket_arn
-  analytics_bucket_arn  = module.s3_buckets["analytics"].bucket_arn
-  data_bucket_name      = module.s3_buckets["data"].bucket_name
-  analytics_bucket_name = module.s3_buckets["analytics"].bucket_name
-  script_bucket         = module.s3_buckets["analytics"].bucket_name
-  script_source_path    = abspath("${path.module}/../../templates/glue-job/temperature_etl.py")
-  timeout_minutes       = 30
-  max_retries           = 1
-  worker_type           = "G.1X"
-  number_of_workers     = 5
-  max_concurrent_runs   = 1
-}
+  name_prefix          = local.name_prefix
+  data_bucket_arn      = module.s3_buckets["data"].bucket_arn
+  support_bucket_arn   = module.s3_buckets["support"].bucket_arn
+  data_bucket_name     = module.s3_buckets["data"].bucket_name
+  support_bucket_name  = module.s3_buckets["support"].bucket_name
+  script_bucket        = module.s3_buckets["support"].bucket_name
+  script_source_path   = abspath("${path.module}/../../templates/glue-job/temperature_etl_iceberg.py")
+  timeout_minutes      = 30
+  max_retries          = 1
+  worker_type          = "G.1X"
+  number_of_workers    = 5
+  max_concurrent_runs  = 1
 
-module "glue_crawler" {
-  source = "../../modules/glue_crawler"
-
-  name_prefix           = local.name_prefix
-  analytics_bucket_arn  = module.s3_buckets["analytics"].bucket_arn
-  analytics_bucket_name = module.s3_buckets["analytics"].bucket_name
-  recrawl_behavior      = "CRAWL_EVERYTHING"
-  schedule              = "cron(0 * * * ? *)"
+  # S3 Tables (Iceberg) parameters
+  table_bucket_arn = module.s3_tables.table_bucket_arn
+  table_name       = module.s3_tables.table_name
+  table_namespace  = module.s3_tables.namespace
 }

@@ -16,7 +16,7 @@ exit 1
 }
 
 SCRIPT_DIR="$(cd $(dirname $0);  pwd)"
-source "${SCRIPT_DIR}/utils.sh"
+source "${SCRIPT_DIR}/lib/utils.sh"
 
 args=()
 while [ "$#" != 0 ]; do

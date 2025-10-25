@@ -21,7 +21,12 @@ variable "data_bucket_name" {
   description = "Name of the S3 bucket storing raw telemetry data."
 }
 
-variable "analytics_bucket_name" {
+variable "support_bucket_name" {
   type        = string
-  description = "Name of the S3 bucket storing curated analytics output."
+  description = "Name of the S3 bucket for Glue scripts, temp files, and DLQ."
+}
+
+variable "table_bucket_name" {
+  type        = string
+  description = "Name of the S3 Table Bucket for Iceberg tables."
 }

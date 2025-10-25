@@ -2,8 +2,12 @@ output "data_bucket_name" {
   value = module.s3_buckets["data"].bucket_name
 }
 
-output "analytics_bucket_name" {
-  value = module.s3_buckets["analytics"].bucket_name
+output "support_bucket_name" {
+  value = module.s3_buckets["support"].bucket_name
+}
+
+output "table_bucket_name" {
+  value = module.s3_tables.table_bucket_name
 }
 
 output "kinesis_stream_name" {
@@ -26,10 +30,10 @@ output "glue_job_name" {
   value = module.glue_job.job_name
 }
 
-output "glue_crawler_name" {
-  value = module.glue_crawler.crawler_name
+output "s3_table_arn" {
+  value = module.s3_tables.table_arn
 }
 
-output "glue_database_name" {
-  value = module.glue_crawler.database_name
+output "s3_table_name" {
+  value = module.s3_tables.table_name
 }
